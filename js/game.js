@@ -28,18 +28,27 @@
     pointer: null, foundLines: [], hintPath: null, hintLevel: 0,
   };
 
-  // ---------- Speech sequencing ----------
-  // Any new speech cancels whatever sequence was playing before.
-  let sayToken = 0;
-  async function say(...parts) {
-    const token = ++sayToken;
-    for (const part of parts) {
-      if (token !== sayToken) return;
-      await A.speak(part);
-    }
-  }
-  const spelled = (word) => word.split('').map(A.letterName).join(', ');
+  // ---------- Narration ----------
+  // Every spoken line is a clip key from js/lines.js. say() plays them in order
+  // and stops whatever was playing before.
+  const say = (...keys) => { A.say(...keys); };
+  const letters = (word) => word.split('').map((ch) => 'letter_' + ch);
   const lower = (w) => w.toLowerCase();
+
+  // ---------- Full screen ----------
+  // Installed to the home screen, the manifest already hides the browser bar.
+  // In a normal browser tab, ask for full screen when Play is tapped
+  // (works on Android and desktop; iPhone Safari doesn't allow it).
+  function goFullscreen() {
+    const installed = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (installed || document.fullscreenElement || !req) return;
+    try {
+      const p = req.call(el, { navigationUI: 'hide' });
+      if (p && p.catch) p.catch(() => {});
+    } catch (e) { /* not allowed here */ }
+  }
 
   // ---------- Screens ----------
   function show(screen) {
@@ -48,6 +57,8 @@
 
   function startGame() {
     A.unlock();
+    goFullscreen();
+    A.preload(Object.keys(window.LINX_LINES));
     let rounds = window.LINX_ROUNDS.slice();
     if (CONFIG.shuffleRounds) rounds.sort(() => Math.random() - 0.5);
     state.rounds = rounds.slice(0, CONFIG.rounds);
@@ -78,10 +89,8 @@
     renderSlots();
     els.nextBtn.classList.add('hidden');
 
-    const intro = state.index === 0
-      ? ['Put your finger on the first letter, and slide to spell the word. Then lift your finger.']
-      : [];
-    say(`Picture ${state.index + 1}.`, round.prompt, ...intro);
+    const intro = state.index === 0 ? ['intro'] : [];
+    say(`picture_${state.index + 1}`, `prompt_${round.word}`, ...intro);
   }
 
   function finishRound() {
@@ -105,7 +114,7 @@
     });
     A.sfx.fanfare();
     confetti(80);
-    say(`You did it! You got ${stars} stars!`, 'Tap the button to play again.');
+    say('didIt', 'playAgain');
   }
 
   // ---------- Rendering ----------
@@ -288,8 +297,7 @@
     if (added) {
       const word = selectedWord();
       A.sfx.tap(state.selection.length * 2);
-      sayToken++;
-      A.sayLetter(word[word.length - 1]);
+      say('letter_' + word[word.length - 1]);
     }
   }
 
@@ -310,7 +318,7 @@
         state.misses = 0;
         hint();
       } else {
-        say('Oops! Try again.');
+        say('oops');
       }
     }, 700);
   }
@@ -339,18 +347,17 @@
       els.picture.classList.remove('wiggle'); void els.picture.offsetWidth; els.picture.classList.add('wiggle');
       els.nextBtn.classList.remove('hidden');
       if (state.found.bonus) {
-        say(`Yes! ${spelled(word)}. ${lower(word)}!`, 'You found both words! Tap the arrow for the next picture.');
+        say('yes', ...letters(word), `word_${word}`, 'bothFound', 'tapArrow');
       } else {
-        say(`Yes! ${spelled(word)}. ${lower(word)}!`, r.bonusPrompt,
-          'Or tap the arrow for the next picture.');
+        say('yes', ...letters(word), `word_${word}`, `bonusq_${r.word}`, 'orTapArrow');
       }
     } else {
       A.sfx.bonus();
       confetti(60, true);
       if (state.found.main) {
-        say(`Wow! ${lower(word)}! You found the bonus word!`, 'Tap the arrow for the next picture.');
+        say('wow', `word_${word}`, 'bonusFound', 'tapArrow');
       } else {
-        say(`Wow! ${lower(word)}! That's the bonus word!`, `Now find the word, ${lower(r.word)}.`);
+        say('wow', `word_${word}`, 'thatsBonus', 'nowFind', `word_${r.word}`);
       }
     }
   }
@@ -366,29 +373,29 @@
   function hint() {
     const r = state.round;
     const kind = !state.found.main ? 'main' : !state.found.bonus ? 'bonus' : null;
-    if (!kind) return say('Tap the arrow for the next picture.');
+    if (!kind) return say('tapArrow');
     const word = kind === 'main' ? r.word : r.bonus;
     const path = state.board.paths[kind === 'main' ? 0 : 1];
     clearHints();
 
-    const ch = A.letterName(word[0]);
+    const first = 'letter_' + word[0];
     if (state.hintLevel === 0) {
       state.tiles[path[0]].classList.add('hint');
-      say(`${lower(word)} starts with the letter ${ch}.`, `Put your finger on the ${ch}.`);
+      say(`word_${word}`, 'startsWith', first, 'fingerOn', first);
     } else {
       path.forEach((i) => state.tiles[i].classList.add('hint'));
       state.hintPath = path;
       drawLines();
-      say(`Put your finger on the ${ch}, and slide. ${spelled(word)}. Then lift your finger.`);
+      say('fingerOn', first, 'andSlide', ...letters(word), 'liftFinger');
     }
     state.hintLevel++;
   }
 
   function repeatPrompt() {
     const r = state.round;
-    if (!state.found.main) say(r.prompt);
-    else if (!state.found.bonus) say(r.bonusPrompt);
-    else say('Tap the arrow for the next picture.');
+    if (!state.found.main) say(`prompt_${r.word}`);
+    else if (!state.found.bonus) say(`bonusq_${r.word}`);
+    else say('tapArrow');
   }
 
   // ---------- Effects ----------
