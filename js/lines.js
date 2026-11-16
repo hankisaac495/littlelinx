@@ -7,7 +7,7 @@
 (function (root) {
   // Letter names chosen so a voice says the name ("dee"), never "capital D".
   const LETTER_TEXT = {
-    A: 'Ay.', B: 'Bee.', C: 'See.', D: 'Dee.', E: 'Ee.', F: 'Eff.', G: 'Gee.',
+    A: 'A!', B: 'Bee.', C: 'See.', D: 'Dee.', E: 'Ee.', F: 'Eff.', G: 'Gee.',
     H: 'Aitch.', I: 'Eye.', J: 'Jay.', K: 'Kay.', L: 'Ell.', M: 'Em.', N: 'En.',
     O: 'Oh.', P: 'Pee.', Q: 'Queue.', R: 'Are.', S: 'Ess.', T: 'Tea.', U: 'You.',
     V: 'Vee.', W: 'Double you.', X: 'Ex.', Y: 'Why.', Z: 'Zee.',
