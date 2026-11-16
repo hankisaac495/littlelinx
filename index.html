@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#7c5cff" />
+  <title>LittleLinx</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Start screen -->
+  <section id="start" class="screen active">
+    <h1 class="logo"><span>Little</span><span>Linx</span></h1>
+    <p class="tagline">A LetterLinx word game</p>
+    <button id="playBtn" class="big-btn" aria-label="Play">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+    </button>
+  </section>
+
+  <!-- Game screen -->
+  <section id="game" class="screen">
+    <header class="topbar">
+      <div id="progress" class="progress" aria-label="Round progress"></div>
+      <button id="muteBtn" class="icon-btn" aria-label="Sound on or off">🔊</button>
+    </header>
+
+    <div class="picture-area">
+      <div id="picture" class="picture" aria-live="polite"></div>
+      <button id="hearBtn" class="icon-btn hear" aria-label="Hear it again">👂</button>
+      <button id="hintBtn" class="icon-btn hint" aria-label="Help me">💡</button>
+      <button id="nextBtn" class="big-btn next hidden" aria-label="Next picture">
+      <svg viewBox="0 0 24 24"><path d="M5 12h12M12 5l7 7-7 7" stroke="currentColor" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
+    </button>
+    </div>
+
+    <div class="targets">
+      <div id="mainSlots" class="slots main"></div>
+      <div id="bonusSlots" class="slots bonus"></div>
+    </div>
+
+    <div id="grid" class="grid" role="grid"></div>
+
+  </section>
+
+  <!-- End screen -->
+  <section id="end" class="screen">
+    <h2 class="end-title">You did it!</h2>
+    <div id="endStars" class="end-stars"></div>
+    <button id="againBtn" class="big-btn" aria-label="Play again">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z" /></svg>
+    </button>
+  </section>
+
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <script src="js/grid.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/rounds.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
