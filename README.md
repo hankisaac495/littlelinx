@@ -1,6 +1,6 @@
 # LittleLinx
 
-A LetterLinx word game for young children. Each game has **10 pictures**. For every picture the child finds the matching word in a **5×5 letter grid** by tapping (or sliding across) touching letters, plus an optional **bonus word** that describes the picture (e.g. a picture of a **DOG** with the bonus word **BLACK**).
+A LetterLinx word game for young children. Each game has **10 pictures**. For every picture the child finds the matching word in a **5×5 letter grid** by sliding a finger across touching letters, plus an optional **bonus word** that describes the picture (e.g. a picture of a **DOG** with the bonus word **BLACK**).
 
 Because young players are still learning to read, every instruction is **spoken aloud**.
 
@@ -8,22 +8,23 @@ Because young players are still learning to read, every instruction is **spoken 
 
 1. Tap the big green ▶ button (this also turns on sound on phones and tablets).
 2. Look at the picture and listen to the instructions.
-3. Tap letters that touch each other (up, down, left or right) to spell the word. Each letter is said aloud as it's tapped.
+3. Put a finger on the first letter and slide across letters that touch (up, down, left or right). A line connects the letters, and each letter is said aloud as it's reached. The word is checked only when the finger is lifted (or the mouse button released).
 4. Find the main word to earn a ⭐. Find the bonus word to earn a 🌟.
 5. Tap the green arrow to go to the next picture.
 
 | Button | What it does |
 | --- | --- |
 | 👂 (or tap the picture) | Plays the instructions again |
-| 💡 | Highlights the next letter to tap and says it aloud |
+| 💡 | First press lights up the first letter. Pressing again shows the whole word's path and spells it aloud |
 | 🔊 | Turns sound on or off |
 
 Help for young players:
 
 - The empty boxes above the grid show how many letters each word has. They fill in as the child taps.
 - Filler tiles never use letters from that round's words, and each word can be spelled in only one place.
-- When the letters tapped can't start either word, the tiles shake, the selection clears and "Try again" is spoken. After 2 misses in a row, a hint appears on its own.
-- Tapping the previous tile undoes the last letter.
+- If the letters don't spell a word when the finger is lifted, the tiles shake and "Try again" is spoken. After 2 misses in a row, a hint appears on its own. Tapping a single letter just says it aloud and doesn't count as a miss.
+- Sliding back onto the previous letter undoes the last letter.
+- Found words keep their line (green for the word, gold for the bonus).
 
 ## Project layout
 

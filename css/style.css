@@ -143,7 +143,17 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
   gap: var(--gap);
   touch-action: none;
   flex-shrink: 0;
+  position: relative;
 }
+
+/* Line that links the letters, drawn on top of the tiles */
+.lines { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.line { fill: none; stroke-width: var(--w, 16px); stroke-linecap: round; stroke-linejoin: round; }
+.line.current { stroke: #3d1fb8; opacity: .7; }
+.line.main { stroke: #13804f; opacity: .7; }
+.line.bonus { stroke: #b87300; opacity: .7; }
+.line.hint { stroke: #e0a800; opacity: .8; stroke-dasharray: 2 calc(var(--w, 16px) * 1.4); }
+.line-start { r: calc(var(--w, 16px) * .8); fill: #3d1fb8; opacity: .7; }
 .tile {
   border-radius: 18%;
   background: var(--tile);
@@ -154,16 +164,17 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; }
   transition: transform .12s, background .15s, color .15s, box-shadow .15s;
   animation: drop .45s backwards;
 }
-.tile.selected {
-  background: var(--select); color: #fff;
-  box-shadow: 0 6px 0 #5b3fd6;
-  transform: scale(1.06);
-}
-.tile.last { transform: scale(1.12); }
+.tile.selected { background: var(--select); color: #fff; box-shadow: 0 6px 0 #5b3fd6; }
+.tile.last { box-shadow: 0 6px 0 #5b3fd6, 0 0 0 4px #fff; }
+/* Letters sit above the connecting line; tile backgrounds sit below it.
+   (Tiles must not keep a transform, or the letters would drop under the line.) */
+.tile .ch { position: relative; z-index: 2; pointer-events: none; }
 .tile.found-main { background: var(--main); color: #fff; box-shadow: 0 6px 0 var(--main-dark); }
 .tile.found-bonus { background: var(--bonus); color: #fff; box-shadow: 0 6px 0 var(--bonus-dark); }
-.tile.found-main, .tile.found-bonus { animation: bounce .6s; }
+.tile.found-main, .tile.found-bonus { animation: none; }
+.tile.found-main .ch, .tile.found-bonus .ch { display: inline-block; animation: bounce .6s; }
 .tile.hint { animation: glow 1s ease-in-out infinite; }
+.tile.selected.hint { animation: none; }
 .tile.shake { animation: shake .4s; }
 
 .next { position: absolute; right: -8px; top: -12px; width: 84px; height: 84px; z-index: 5; }

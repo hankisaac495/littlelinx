@@ -25,6 +25,7 @@
     rounds: [], index: 0, round: null, board: null, tiles: [],
     selection: [], found: { main: false, bonus: false },
     misses: 0, results: [], dragging: false, busy: false,
+    pointer: null, foundLines: [], hintPath: null, hintLevel: 0,
   };
 
   // ---------- Speech sequencing ----------
@@ -63,6 +64,10 @@
     state.results[state.index] = state.found;
     state.selection = [];
     state.misses = 0;
+    state.foundLines = [];
+    state.hintPath = null;
+    state.hintLevel = 0;
+    state.dragging = false;
     state.board = LinxGrid.generateGrid([round.word, round.bonus], {
       size: CONFIG.size, diagonal: CONFIG.diagonal,
     });
@@ -74,7 +79,7 @@
     els.nextBtn.classList.add('hidden');
 
     const intro = state.index === 0
-      ? ['Tap the letters that spell the word. Letters must be touching.']
+      ? ['Put your finger on the first letter, and slide to spell the word. Then lift your finger.']
       : [];
     say(`Picture ${state.index + 1}.`, round.prompt, ...intro);
   }
@@ -133,13 +138,56 @@
     state.tiles = state.board.letters.map((ch, i) => {
       const t = document.createElement('div');
       t.className = 'tile';
-      t.textContent = ch;
+      t.innerHTML = `<span class="ch">${ch}</span>`;
       t.dataset.idx = i;
       t.setAttribute('role', 'gridcell');
       t.style.animationDelay = `${(Math.floor(i / CONFIG.size) + (i % CONFIG.size)) * 0.04}s`;
       els.grid.appendChild(t);
       return t;
     });
+    state.lines = document.createElementNS(SVGNS, 'svg');
+    state.lines.setAttribute('class', 'lines');
+    els.grid.appendChild(state.lines);
+    requestAnimationFrame(drawLines);
+  }
+
+  // ---------- Connecting lines ----------
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  function tileCenter(i) {
+    const t = state.tiles[i];
+    return [t.offsetLeft + t.offsetWidth / 2, t.offsetTop + t.offsetHeight / 2];
+  }
+
+  function polyline(points, cls) {
+    const el = document.createElementNS(SVGNS, 'polyline');
+    el.setAttribute('points', points.map((p) => p.join(',')).join(' '));
+    el.setAttribute('class', cls);
+    return el;
+  }
+
+  function drawLines() {
+    const svg = state.lines;
+    if (!svg || !state.tiles.length) return;
+    svg.setAttribute('viewBox', `0 0 ${els.grid.clientWidth} ${els.grid.clientHeight}`);
+    svg.style.setProperty('--w', state.tiles[0].offsetWidth * 0.26 + 'px');
+    svg.innerHTML = '';
+    if (state.hintPath) svg.appendChild(polyline(state.hintPath.map(tileCenter), 'line hint'));
+    state.foundLines.forEach((f) => svg.appendChild(polyline(f.path.map(tileCenter), 'line ' + f.kind)));
+    if (state.selection.length) {
+      const pts = state.selection.map(tileCenter);
+      // While dragging, stretch the line from the last letter to the finger.
+      if (state.dragging && state.pointer) {
+        const g = els.grid.getBoundingClientRect();
+        pts.push([state.pointer[0] - g.left - els.grid.clientLeft, state.pointer[1] - g.top - els.grid.clientTop]);
+      }
+      svg.appendChild(polyline(pts, 'line current'));
+      const [x, y] = pts[0];
+      const dot = document.createElementNS(SVGNS, 'circle');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      dot.setAttribute('class', 'line-start');
+      svg.appendChild(dot);
+    }
   }
 
   function renderSlots() {
@@ -167,6 +215,7 @@
       t.classList.toggle('last', at >= 0 && at === state.selection.length - 1);
     });
     renderSlots();
+    drawLines();
   }
 
   // ---------- Selection logic ----------
@@ -192,23 +241,16 @@
     return LinxGrid.isAdjacent(a, b, CONFIG.size, CONFIG.diagonal);
   }
 
-  // Tap / press on a tile.
+  // Finger (or mouse button) goes down on a tile: start a new word there.
   function pressTile(i) {
     if (state.busy || isFoundTile(i)) return;
-    clearHints();
-    const sel = state.selection;
-    const last = sel[sel.length - 1];
-
-    if (sel.length && i === last) return;
-    if (sel.length > 1 && i === sel[sel.length - 2]) { sel.pop(); afterChange(false); return; }
-    if (sel.length && adjacent(last, i) && !sel.includes(i)) { sel.push(i); afterChange(true); return; }
-
-    // Otherwise start a brand new word here.
+    state.dragging = true;
     state.selection = [i];
     afterChange(true);
   }
 
-  // Finger sliding across tiles while pressed.
+  // Finger sliding across tiles while pressed: add the next touching tile,
+  // or slide back onto the previous tile to undo the last letter.
   function dragOver(i) {
     if (state.busy || isFoundTile(i)) return;
     const sel = state.selection;
@@ -217,22 +259,37 @@
     if (adjacent(sel[sel.length - 1], i) && !sel.includes(i)) { sel.push(i); afterChange(true); }
   }
 
-  function afterChange(added) {
-    renderSelection();
+  // Finger lifted / mouse released: only now is the word checked.
+  function release() {
+    if (!state.dragging) return;
+    state.dragging = false;
+    state.pointer = null;
     const word = selectedWord();
-    if (added) {
-      const ch = word[word.length - 1];
-      A.sfx.tap(state.selection.length * 2);
-      sayToken++;
-      A.sayLetter(ch);
-    }
-
     if (!state.found.main && word === state.round.word) return foundWord('main');
     if (!state.found.bonus && word === state.round.bonus) return foundWord('bonus');
+    if (state.selection.length <= 1) {
+      // A single tap just says the letter; it isn't counted as a try.
+      state.selection = [];
+      renderSelection();
+      return;
+    }
+    miss();
+  }
 
-    if (!targetFor(word)) {
-      // These letters don't start any word we're looking for.
-      miss();
+  function cancelDrag() {
+    state.dragging = false;
+    state.pointer = null;
+    state.selection = [];
+    renderSelection();
+  }
+
+  function afterChange(added) {
+    renderSelection();
+    if (added) {
+      const word = selectedWord();
+      A.sfx.tap(state.selection.length * 2);
+      sayToken++;
+      A.sayLetter(word[word.length - 1]);
     }
   }
 
@@ -265,6 +322,9 @@
     renderProgress();
     const tiles = state.selection.slice();
     state.selection = [];
+    state.foundLines.push({ path: tiles, kind });
+    state.hintLevel = 0;
+    clearHints();
     tiles.forEach((i, n) => {
       const t = state.tiles[i];
       t.classList.remove('selected', 'last');
@@ -298,29 +358,30 @@
   // ---------- Help ----------
   function clearHints() {
     state.tiles.forEach((t) => t.classList.remove('hint'));
+    state.hintPath = null;
+    drawLines();
   }
 
-  // Light up the next correct tile and say its letter.
+  // First hint: light up the first letter. Next hints: show the whole path.
   function hint() {
     const r = state.round;
     const kind = !state.found.main ? 'main' : !state.found.bonus ? 'bonus' : null;
     if (!kind) return say('Tap the arrow for the next picture.');
     const word = kind === 'main' ? r.word : r.bonus;
     const path = state.board.paths[kind === 'main' ? 0 : 1];
-
-    const sel = state.selection;
-    const onTrack = sel.length < path.length && sel.every((idx, n) => path[n] === idx);
-    if (!onTrack) { state.selection = []; renderSelection(); }
-    const step = onTrack ? sel.length : 0;
     clearHints();
-    state.tiles[path[step]].classList.add('hint');
 
-    const ch = A.letterName(word[step]);
-    if (step === 0) {
-      say(`${lower(word)} starts with the letter ${ch}.`, `Find the letter ${ch}.`);
+    const ch = A.letterName(word[0]);
+    if (state.hintLevel === 0) {
+      state.tiles[path[0]].classList.add('hint');
+      say(`${lower(word)} starts with the letter ${ch}.`, `Put your finger on the ${ch}.`);
     } else {
-      say(`Next, find the letter ${ch}.`);
+      path.forEach((i) => state.tiles[i].classList.add('hint'));
+      state.hintPath = path;
+      drawLines();
+      say(`Put your finger on the ${ch}, and slide. ${spelled(word)}. Then lift your finger.`);
     }
+    state.hintLevel++;
   }
 
   function repeatPrompt() {
@@ -361,19 +422,24 @@
   }
 
   els.grid.addEventListener('pointerdown', (e) => {
+    if (e.button > 0) return;
     const i = tileFromPoint(e.clientX, e.clientY, false);
     if (i < 0) return;
     e.preventDefault();
-    state.dragging = true;
+    state.pointer = [e.clientX, e.clientY];
     pressTile(i);
   });
   window.addEventListener('pointermove', (e) => {
     if (!state.dragging) return;
+    state.pointer = [e.clientX, e.clientY];
     const i = tileFromPoint(e.clientX, e.clientY, true);
     if (i >= 0) dragOver(i);
+    drawLines();
   });
-  window.addEventListener('pointerup', () => { state.dragging = false; });
-  window.addEventListener('pointercancel', () => { state.dragging = false; });
+  window.addEventListener('pointerup', release);
+  window.addEventListener('pointercancel', cancelDrag);
+  window.addEventListener('blur', cancelDrag);
+  window.addEventListener('resize', () => drawLines());
 
   els.playBtn.addEventListener('click', startGame);
   els.againBtn.addEventListener('click', startGame);
