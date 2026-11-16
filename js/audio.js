@@ -7,8 +7,14 @@
   let ctx = null;
   let muted = false;
 
-  // Letter names some voices mispronounce when given a single character.
-  const LETTER_NAMES = { A: 'ay', E: 'ee', I: 'eye', O: 'oh', U: 'you', Y: 'why' };
+  // Spoken names for every letter. Passing a bare capital ("D") makes many
+  // voices say "capital D", so we always speak the name instead.
+  const LETTER_NAMES = {
+    A: 'ay', B: 'bee', C: 'see', D: 'dee', E: 'ee', F: 'eff', G: 'jee',
+    H: 'aitch', I: 'eye', J: 'jay', K: 'kay', L: 'el', M: 'em', N: 'en',
+    O: 'oh', P: 'pee', Q: 'cue', R: 'ar', S: 'ess', T: 'tee', U: 'you',
+    V: 'vee', W: 'double you', X: 'ex', Y: 'why', Z: 'zee',
+  };
 
   function pickVoice() {
     if (!synth) return;
