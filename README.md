@@ -78,7 +78,7 @@ Each line the narrator says is a short clip named after its key in `js/lines.js`
 
 To add or replace recordings:
 
-1. Put the mp3 files in `audio/`, named `<key>.mp3`. The narrator voice is Ainsley from Higgsfield (Seed Audio model, speech rate −10). The clips are trimmed so they start and end on the speech, which keeps spelled-out words snappy. Some short clips came back with the word said twice, so only the first one was kept.
+1. Put the mp3 files in `audio/`, named `<key>.mp3`. The narrator voice is Ainsley from Higgsfield (Seed Audio model, speech rate −10). Recorded one at a time, the voice model often said the last word twice ("Dog! Dog!"). To avoid that, the lines were recorded as lists with long pauses between items (for example `"H...\nI...\nJ..."`) and cut at those pauses, so each clip holds exactly one item. The clips are trimmed to start and end on the speech and set to the same volume.
 2. Run `node tools/update-clips.js`. This updates `audio/clips.json` and lists any lines that still have no recording.
 
 Any line without a recording is read by the browser's built-in voice instead, so the game always works.

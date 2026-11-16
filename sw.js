@@ -1,7 +1,7 @@
 // Service worker: lets LittleLinx be installed and played offline.
 // Code and pages: network first, so a new deploy shows up right away.
 // Audio and icons: cache first, since they rarely change.
-const CACHE = 'littlelinx-v3';
+const CACHE = 'littlelinx-v4';
 const SHELL = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/grid.js', 'js/audio.js', 'js/rounds.js', 'js/lines.js', 'js/game.js',
